@@ -1,5 +1,6 @@
 import { createSystem, defaultConfig } from "@chakra-ui/react"
 import { buttonRecipe } from "./theme/button.recipe"
+import { BRANDING } from "./config/branding"
 
 export const system = createSystem(defaultConfig, {
   globalCss: {
@@ -20,7 +21,12 @@ export const system = createSystem(defaultConfig, {
     tokens: {
       colors: {
         ui: {
-          main: { value: "#009688" },
+          main: { value: BRANDING.colors.primary },
+        },
+        brand: {
+          primary: { value: BRANDING.colors.primary },
+          secondary: { value: BRANDING.colors.secondary },
+          accent: { value: BRANDING.colors.accent },
         },
       },
     },

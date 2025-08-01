@@ -1,0 +1,3 @@
+"""
+Tanzanite CLI module.
+"""

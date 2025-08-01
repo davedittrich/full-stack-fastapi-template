@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
@@ -44,6 +45,9 @@ class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+    challenges: list["Challenge"] = Relationship(back_populates="owner", cascade_delete=True)
+    questions_asked: list["Question"] = Relationship(back_populates="asked_by_user", cascade_delete=True, sa_relationship_kwargs={"foreign_keys": "[Question.asked_by]"})
+    questions_assigned: list["Question"] = Relationship(back_populates="assigned_to_user", cascade_delete=True, sa_relationship_kwargs={"foreign_keys": "[Question.assigned_to]"})
 
 
 # Properties to return via API, id is always required
@@ -89,6 +93,145 @@ class ItemPublic(ItemBase):
 
 class ItemsPublic(SQLModel):
     data: list[ItemPublic]
+    count: int
+
+
+# Challenge models
+# Shared properties
+class ChallengeBase(SQLModel):
+    title: str = Field(min_length=1, max_length=100, unique=True, index=True)
+    author: str = Field(min_length=1, max_length=100)
+    url: str = Field(min_length=1, max_length=256)
+    description: str = Field(min_length=1, max_length=1024)
+    date_posted: str = Field(min_length=1, max_length=10)
+    is_active: bool = True
+
+
+# Properties to receive on challenge creation
+class ChallengeCreate(ChallengeBase):
+    pass
+
+
+# Properties to receive on challenge update
+class ChallengeUpdate(ChallengeBase):
+    title: str | None = Field(default=None, min_length=1, max_length=100)  # type: ignore
+    author: str | None = Field(default=None, min_length=1, max_length=100)
+    url: str | None = Field(default=None, min_length=1, max_length=256)
+    description: str | None = Field(default=None, min_length=1, max_length=1024)
+    date_posted: str | None = Field(default=None, min_length=1, max_length=10)
+    is_active: bool | None = None
+
+
+# Database model, database table inferred from class name
+class Challenge(ChallengeBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    owner_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="CASCADE"
+    )
+    owner: User | None = Relationship(back_populates="challenges")
+    questions: list["Question"] = Relationship(back_populates="challenge", cascade_delete=True)
+
+
+# Properties to return via API, id is always required
+class ChallengePublic(ChallengeBase):
+    id: uuid.UUID
+    owner_id: uuid.UUID
+
+
+class ChallengesPublic(SQLModel):
+    data: list[ChallengePublic]
+    count: int
+
+
+# Question models
+# Shared properties
+class QuestionBase(SQLModel):
+    type: str = Field(default="general", max_length=80)
+    step: int | None = None
+    subject: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    more_info: str = Field(min_length=1)
+
+
+# Properties to receive on question creation
+class QuestionCreate(QuestionBase):
+    challenge_id: uuid.UUID
+
+
+# Properties to receive on question update
+class QuestionUpdate(QuestionBase):
+    challenge_id: uuid.UUID | None = None
+    type: str | None = Field(default=None, max_length=80)
+    subject: str | None = Field(default=None, min_length=1)
+    description: str | None = Field(default=None, min_length=1)
+    more_info: str | None = Field(default=None, min_length=1)
+
+
+# Database model, database table inferred from class name
+class Question(QuestionBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    challenge_id: uuid.UUID = Field(
+        foreign_key="challenge.id", nullable=False, ondelete="CASCADE"
+    )
+    asked_by: uuid.UUID | None = Field(foreign_key="user.id", nullable=True)
+    asked_time: datetime = Field(default_factory=datetime.utcnow)
+    assigned_to: uuid.UUID | None = Field(foreign_key="user.id", nullable=True)
+    answered_time: datetime | None = None
+
+    challenge: Challenge | None = Relationship(back_populates="questions")
+    asked_by_user: User | None = Relationship(back_populates="questions_asked", sa_relationship_kwargs={"foreign_keys": "[Question.asked_by]"})
+    assigned_to_user: User | None = Relationship(back_populates="questions_assigned", sa_relationship_kwargs={"foreign_keys": "[Question.assigned_to]"})
+
+
+# Properties to return via API, id is always required
+class QuestionPublic(QuestionBase):
+    id: uuid.UUID
+    challenge_id: uuid.UUID
+    asked_by: uuid.UUID | None
+    asked_time: datetime
+    assigned_to: uuid.UUID | None
+    answered_time: datetime | None
+
+
+class QuestionsPublic(SQLModel):
+    data: list[QuestionPublic]
+    count: int
+
+
+# FAQ model
+# Shared properties
+class FAQBase(SQLModel):
+    type: str = Field(default="general", max_length=80)
+    subject: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    more_info: str | None = Field(default=None, max_length=256)
+
+
+# Properties to receive on FAQ creation
+class FAQCreate(FAQBase):
+    pass
+
+
+# Properties to receive on FAQ update
+class FAQUpdate(FAQBase):
+    type: str | None = Field(default=None, max_length=80)
+    subject: str | None = Field(default=None, min_length=1)
+    description: str | None = Field(default=None, min_length=1)
+    more_info: str | None = Field(default=None, max_length=256)
+
+
+# Database model, database table inferred from class name
+class FAQ(FAQBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+
+
+# Properties to return via API, id is always required
+class FAQPublic(FAQBase):
+    id: uuid.UUID
+
+
+class FAQsPublic(SQLModel):
+    data: list[FAQPublic]
     count: int
 
 

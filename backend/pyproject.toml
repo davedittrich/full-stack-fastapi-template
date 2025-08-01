@@ -21,6 +21,10 @@ dependencies = [
     "pydantic-settings<3.0.0,>=2.2.1",
     "sentry-sdk[fastapi]<2.0.0,>=1.40.6",
     "pyjwt<3.0.0,>=2.8.0",
+    # CLI dependencies
+    "cliff<5.0.0,>=4.5.0",
+    "python-secrets<25.0.0,>=24.10.12",
+    "requests<3.0.0,>=2.31.0",
 ]
 
 [tool.uv]
@@ -32,6 +36,45 @@ dev-dependencies = [
     "types-passlib<2.0.0.0,>=1.7.7.20240106",
     "coverage<8.0.0,>=7.4.3",
 ]
+
+[project.scripts]
+tanzanite = "app.cli.__main__:main"
+
+[project.entry-points."tanzanite"]
+# Challenge commands
+"challenge_create" = "app.cli.challenge.create:CmdChallengeCreate"
+"challenge_delete" = "app.cli.challenge.delete:CmdChallengeDelete"
+"challenge_export" = "app.cli.challenge.export:CmdChallengeExport"
+"challenge_import" = "app.cli.challenge.import:CmdChallengeImport"
+"challenge_list" = "app.cli.challenge.list:CmdChallengeList"
+"challenge_show" = "app.cli.challenge.show:CmdChallengeShow"
+"challenge_update" = "app.cli.challenge.update:CmdChallengeUpdate"
+
+# Question commands
+"question_create" = "app.cli.question.create:CmdQuestionCreate"
+"question_delete" = "app.cli.question.delete:CmdQuestionDelete"
+"question_list" = "app.cli.question.list:CmdQuestionList"
+"question_show" = "app.cli.question.show:CmdQuestionShow"
+"question_update" = "app.cli.question.update:CmdQuestionUpdate"
+
+# User commands
+"user_create" = "app.cli.user.create:CmdUserCreate"
+"user_delete" = "app.cli.user.delete:CmdUserDelete"
+"user_list" = "app.cli.user.list:CmdUserList"
+"user_show" = "app.cli.user.show:CmdUserShow"
+"user_update" = "app.cli.user.update:CmdUserUpdate"
+
+# Server commands
+"server_start" = "app.cli.server.start:CmdServerStart"
+"server_stop" = "app.cli.server.stop:CmdServerStop"
+
+# Database commands
+"db_init" = "app.cli.db.init:CmdDbInit"
+"db_reset" = "app.cli.db.reset:CmdDbReset"
+
+# Utility commands
+"login" = "app.cli.login:CmdLogin"
+"about" = "app.cli.about:CmdAbout"
 
 [build-system]
 requires = ["hatchling"]

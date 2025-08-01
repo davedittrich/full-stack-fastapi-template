@@ -1,3 +1,4 @@
+import os
 import secrets
 import warnings
 from typing import Annotated, Any, Literal
@@ -14,6 +15,13 @@ from pydantic import (
 from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
+
+# Try to import psec for advanced secrets management
+try:
+    from app.core.psec_config import PsecSettings, secrets_environment
+    PSEC_AVAILABLE = True
+except ImportError:
+    PSEC_AVAILABLE = False
 
 
 def parse_cors(v: Any) -> list[str] | str:
@@ -117,4 +125,18 @@ class Settings(BaseSettings):
         return self
 
 
-settings = Settings()  # type: ignore
+# Use psec-based settings if available and configured, otherwise fall back to .env
+if PSEC_AVAILABLE and os.getenv('TANZANITE_USE_PSEC', '1') == '1':
+    try:
+        settings = PsecSettings()  # type: ignore
+        print("[+] Using python-secrets (psec) for configuration")
+    except Exception as e:
+        print(f"[-] Failed to load psec settings: {e}")
+        print("[*] Falling back to .env configuration")
+        settings = Settings()  # type: ignore
+else:
+    settings = Settings()  # type: ignore
+    if os.getenv('TANZANITE_USE_PSEC') == '0':
+        print("[*] Using .env configuration (psec disabled)")
+    elif not PSEC_AVAILABLE:
+        print("[*] Using .env configuration (psec not available)")
