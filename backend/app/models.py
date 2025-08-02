@@ -1,8 +1,17 @@
 import uuid
 from datetime import datetime
+from enum import Enum
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
+
+
+# Role-based access control
+class UserRole(str, Enum):
+    STUDENT = "student"
+    PROCTOR = "proctor"
+    LECTURER = "lecturer"
+    ADMIN = "admin"
 
 
 # Shared properties
@@ -11,6 +20,7 @@ class UserBase(SQLModel):
     is_active: bool = True
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
+    role: UserRole = Field(default=UserRole.STUDENT)
 
 
 # Properties to receive via API on creation
@@ -46,6 +56,7 @@ class User(UserBase, table=True):
     hashed_password: str
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
     challenges: list["Challenge"] = Relationship(back_populates="owner", cascade_delete=True)
+    assessments: list["Assessment"] = Relationship(back_populates="owner", cascade_delete=True)
     questions_asked: list["Question"] = Relationship(back_populates="asked_by_user", cascade_delete=True, sa_relationship_kwargs={"foreign_keys": "[Question.asked_by]"})
     questions_assigned: list["Question"] = Relationship(back_populates="assigned_to_user", cascade_delete=True, sa_relationship_kwargs={"foreign_keys": "[Question.assigned_to]"})
 
@@ -130,6 +141,7 @@ class Challenge(ChallengeBase, table=True):
     )
     owner: User | None = Relationship(back_populates="challenges")
     questions: list["Question"] = Relationship(back_populates="challenge", cascade_delete=True)
+    assessments: list["Assessment"] = Relationship(back_populates="challenge", cascade_delete=True)
 
 
 # Properties to return via API, id is always required
@@ -195,6 +207,69 @@ class QuestionPublic(QuestionBase):
 
 class QuestionsPublic(SQLModel):
     data: list[QuestionPublic]
+    count: int
+
+
+# Assessment model for quiz-style questions with scoring
+# Shared properties
+class AssessmentBase(SQLModel):
+    question_text: str = Field(min_length=1, max_length=1024)
+    question_type: str = Field(default="short_answer", max_length=50)
+    points: int = Field(default=10, ge=1, le=1000)
+    answer_text: str | None = Field(default=None, max_length=2048)
+    hint_text: str | None = Field(default=None, max_length=1024)
+    flag_format: str | None = Field(default=None, max_length=255)
+    difficulty: str = Field(default="medium", max_length=20)  # easy, medium, hard
+    is_active: bool = Field(default=True)
+
+
+# Properties to receive on assessment creation
+class AssessmentCreate(AssessmentBase):
+    challenge_id: uuid.UUID
+
+
+# Properties to receive on assessment update
+class AssessmentUpdate(AssessmentBase):
+    challenge_id: uuid.UUID | None = None
+    question_text: str | None = Field(default=None, min_length=1, max_length=1024)
+    question_type: str | None = Field(default=None, max_length=50)
+    points: int | None = Field(default=None, ge=1, le=1000)
+    answer_text: str | None = Field(default=None, max_length=2048)
+    hint_text: str | None = Field(default=None, max_length=1024)
+    flag_format: str | None = Field(default=None, max_length=255)
+    difficulty: str | None = Field(default=None, max_length=20)
+    is_active: bool | None = None
+
+
+# Database model, database table inferred from class name
+class Assessment(AssessmentBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    challenge_id: uuid.UUID = Field(
+        foreign_key="challenge.id", nullable=False, ondelete="CASCADE"
+    )
+    owner_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="CASCADE"
+    )
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    challenge: Challenge | None = Relationship(back_populates="assessments")
+    owner: User | None = Relationship(back_populates="assessments")
+
+
+# Properties to return via API, id is always required
+class AssessmentPublic(AssessmentBase):
+    id: uuid.UUID
+    challenge_id: uuid.UUID
+    owner_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    challenge: Challenge | None = None
+
+
+class AssessmentsPublic(SQLModel):
+    data: list[AssessmentPublic]
     count: int
 
 

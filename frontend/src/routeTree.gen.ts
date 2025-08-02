@@ -14,12 +14,27 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as SignupImport } from './routes/signup'
 import { Route as ResetPasswordImport } from './routes/reset-password'
 import { Route as RecoverPasswordImport } from './routes/recover-password'
+import { Route as QuestionsImport } from './routes/questions'
 import { Route as LoginImport } from './routes/login'
+import { Route as ChallengesImport } from './routes/challenges'
+import { Route as AssessmentsImport } from './routes/assessments'
 import { Route as LayoutImport } from './routes/_layout'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
+import { Route as QuestionsCreateImport } from './routes/questions/create'
+import { Route as QuestionsQuestionIdImport } from './routes/questions/$questionId'
+import { Route as ChallengesCreateImport } from './routes/challenges/create'
+import { Route as ChallengesChallengeIdImport } from './routes/challenges/$challengeId'
+import { Route as AssessmentsCreateImport } from './routes/assessments/create'
+import { Route as AssessmentsAssessmentIdImport } from './routes/assessments/$assessmentId'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
+import { Route as LayoutQuestionsImport } from './routes/_layout/questions'
 import { Route as LayoutItemsImport } from './routes/_layout/items'
+import { Route as LayoutChallengesImport } from './routes/_layout/challenges'
+import { Route as LayoutAssessmentsImport } from './routes/_layout/assessments'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
+import { Route as QuestionsQuestionIdEditImport } from './routes/questions/$questionId/edit'
+import { Route as ChallengesChallengeIdEditImport } from './routes/challenges/$challengeId/edit'
+import { Route as AssessmentsAssessmentIdEditImport } from './routes/assessments/$assessmentId/edit'
 
 // Create/Update Routes
 
@@ -38,8 +53,23 @@ const RecoverPasswordRoute = RecoverPasswordImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const QuestionsRoute = QuestionsImport.update({
+  path: '/questions',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const LoginRoute = LoginImport.update({
   path: '/login',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ChallengesRoute = ChallengesImport.update({
+  path: '/challenges',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AssessmentsRoute = AssessmentsImport.update({
+  path: '/assessments',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -53,8 +83,43 @@ const LayoutIndexRoute = LayoutIndexImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
+const QuestionsCreateRoute = QuestionsCreateImport.update({
+  path: '/create',
+  getParentRoute: () => QuestionsRoute,
+} as any)
+
+const QuestionsQuestionIdRoute = QuestionsQuestionIdImport.update({
+  path: '/$questionId',
+  getParentRoute: () => QuestionsRoute,
+} as any)
+
+const ChallengesCreateRoute = ChallengesCreateImport.update({
+  path: '/create',
+  getParentRoute: () => ChallengesRoute,
+} as any)
+
+const ChallengesChallengeIdRoute = ChallengesChallengeIdImport.update({
+  path: '/$challengeId',
+  getParentRoute: () => ChallengesRoute,
+} as any)
+
+const AssessmentsCreateRoute = AssessmentsCreateImport.update({
+  path: '/create',
+  getParentRoute: () => AssessmentsRoute,
+} as any)
+
+const AssessmentsAssessmentIdRoute = AssessmentsAssessmentIdImport.update({
+  path: '/$assessmentId',
+  getParentRoute: () => AssessmentsRoute,
+} as any)
+
 const LayoutSettingsRoute = LayoutSettingsImport.update({
   path: '/settings',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutQuestionsRoute = LayoutQuestionsImport.update({
+  path: '/questions',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -63,10 +128,36 @@ const LayoutItemsRoute = LayoutItemsImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
+const LayoutChallengesRoute = LayoutChallengesImport.update({
+  path: '/challenges',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutAssessmentsRoute = LayoutAssessmentsImport.update({
+  path: '/assessments',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
 const LayoutAdminRoute = LayoutAdminImport.update({
   path: '/admin',
   getParentRoute: () => LayoutRoute,
 } as any)
+
+const QuestionsQuestionIdEditRoute = QuestionsQuestionIdEditImport.update({
+  path: '/edit',
+  getParentRoute: () => QuestionsQuestionIdRoute,
+} as any)
+
+const ChallengesChallengeIdEditRoute = ChallengesChallengeIdEditImport.update({
+  path: '/edit',
+  getParentRoute: () => ChallengesChallengeIdRoute,
+} as any)
+
+const AssessmentsAssessmentIdEditRoute =
+  AssessmentsAssessmentIdEditImport.update({
+    path: '/edit',
+    getParentRoute: () => AssessmentsAssessmentIdRoute,
+  } as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -76,8 +167,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutImport
       parentRoute: typeof rootRoute
     }
+    '/assessments': {
+      preLoaderRoute: typeof AssessmentsImport
+      parentRoute: typeof rootRoute
+    }
+    '/challenges': {
+      preLoaderRoute: typeof ChallengesImport
+      parentRoute: typeof rootRoute
+    }
     '/login': {
       preLoaderRoute: typeof LoginImport
+      parentRoute: typeof rootRoute
+    }
+    '/questions': {
+      preLoaderRoute: typeof QuestionsImport
       parentRoute: typeof rootRoute
     }
     '/recover-password': {
@@ -96,17 +199,65 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/assessments': {
+      preLoaderRoute: typeof LayoutAssessmentsImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/challenges': {
+      preLoaderRoute: typeof LayoutChallengesImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/items': {
       preLoaderRoute: typeof LayoutItemsImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/questions': {
+      preLoaderRoute: typeof LayoutQuestionsImport
       parentRoute: typeof LayoutImport
     }
     '/_layout/settings': {
       preLoaderRoute: typeof LayoutSettingsImport
       parentRoute: typeof LayoutImport
     }
+    '/assessments/$assessmentId': {
+      preLoaderRoute: typeof AssessmentsAssessmentIdImport
+      parentRoute: typeof AssessmentsImport
+    }
+    '/assessments/create': {
+      preLoaderRoute: typeof AssessmentsCreateImport
+      parentRoute: typeof AssessmentsImport
+    }
+    '/challenges/$challengeId': {
+      preLoaderRoute: typeof ChallengesChallengeIdImport
+      parentRoute: typeof ChallengesImport
+    }
+    '/challenges/create': {
+      preLoaderRoute: typeof ChallengesCreateImport
+      parentRoute: typeof ChallengesImport
+    }
+    '/questions/$questionId': {
+      preLoaderRoute: typeof QuestionsQuestionIdImport
+      parentRoute: typeof QuestionsImport
+    }
+    '/questions/create': {
+      preLoaderRoute: typeof QuestionsCreateImport
+      parentRoute: typeof QuestionsImport
+    }
     '/_layout/': {
       preLoaderRoute: typeof LayoutIndexImport
       parentRoute: typeof LayoutImport
+    }
+    '/assessments/$assessmentId/edit': {
+      preLoaderRoute: typeof AssessmentsAssessmentIdEditImport
+      parentRoute: typeof AssessmentsAssessmentIdImport
+    }
+    '/challenges/$challengeId/edit': {
+      preLoaderRoute: typeof ChallengesChallengeIdEditImport
+      parentRoute: typeof ChallengesChallengeIdImport
+    }
+    '/questions/$questionId/edit': {
+      preLoaderRoute: typeof QuestionsQuestionIdEditImport
+      parentRoute: typeof QuestionsQuestionIdImport
     }
   }
 }
@@ -116,11 +267,28 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren([
   LayoutRoute.addChildren([
     LayoutAdminRoute,
+    LayoutAssessmentsRoute,
+    LayoutChallengesRoute,
     LayoutItemsRoute,
+    LayoutQuestionsRoute,
     LayoutSettingsRoute,
     LayoutIndexRoute,
   ]),
+  AssessmentsRoute.addChildren([
+    AssessmentsAssessmentIdRoute.addChildren([
+      AssessmentsAssessmentIdEditRoute,
+    ]),
+    AssessmentsCreateRoute,
+  ]),
+  ChallengesRoute.addChildren([
+    ChallengesChallengeIdRoute.addChildren([ChallengesChallengeIdEditRoute]),
+    ChallengesCreateRoute,
+  ]),
   LoginRoute,
+  QuestionsRoute.addChildren([
+    QuestionsQuestionIdRoute.addChildren([QuestionsQuestionIdEditRoute]),
+    QuestionsCreateRoute,
+  ]),
   RecoverPasswordRoute,
   ResetPasswordRoute,
   SignupRoute,

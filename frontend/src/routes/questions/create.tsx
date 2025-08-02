@@ -23,8 +23,7 @@ import { type SubmitHandler, useForm, Controller } from "react-hook-form"
 import { FiArrowLeft } from "react-icons/fi"
 
 import { type ApiError, type QuestionCreate } from "../../client"
-import { QuestionsService } from "../../client/questions"
-import { ChallengesService } from "../../client/challenges"
+import { QuestionsService, ChallengesService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 
 export const Route = createFileRoute("/questions/create")({
@@ -35,27 +34,23 @@ export const Route = createFileRoute("/questions/create")({
 })
 
 interface QuestionFormData {
-  question_text: string
-  question_type: string
-  points: number
-  challenge_id?: string
-  answer_text?: string
-  hint_text?: string
-  flag_format?: string
-  assigned_to?: string
+  type: string
+  step?: number
+  subject: string
+  description: string
+  more_info: string
+  challenge_id: string
 }
 
-const QUESTION_TYPES = [
-  "multiple_choice",
-  "short_answer",
-  "essay",
-  "coding",
-  "flag_capture",
-  "forensics",
-  "reverse_engineering",
-  "web_security",
-  "cryptography",
-  "network_security",
+const HELP_REQUEST_TYPES = [
+  "general",
+  "technical",
+  "installation",
+  "configuration",
+  "troubleshooting",
+  "concept_clarification",
+  "tool_usage",
+  "environment_setup",
   "other"
 ]
 
@@ -75,14 +70,12 @@ function CreateQuestion() {
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      question_text: "",
-      question_type: "short_answer",
-      points: 10,
+      type: "general",
+      step: undefined,
+      subject: "",
+      description: "",
+      more_info: "",
       challenge_id: search.challengeId || "",
-      answer_text: "",
-      hint_text: "",
-      flag_format: "",
-      assigned_to: "",
     },
   })
 
@@ -97,7 +90,7 @@ function CreateQuestion() {
     mutationFn: (data: QuestionCreate) =>
       QuestionsService.createQuestion({ requestBody: data }),
     onSuccess: (data) => {
-      showToast("Success!", "Question created successfully.", "success")
+      showToast("Success!", "Help request created successfully.", "success")
       queryClient.invalidateQueries({ queryKey: ["questions"] })
       router.navigate({ 
         to: "/questions/$questionId", 
@@ -112,14 +105,12 @@ function CreateQuestion() {
 
   const onSubmit: SubmitHandler<QuestionFormData> = async (data) => {
     const questionData: QuestionCreate = {
-      question_text: data.question_text,
-      question_type: data.question_type,
-      points: data.points,
-      challenge_id: data.challenge_id || undefined,
-      answer_text: data.answer_text || undefined,
-      hint_text: data.hint_text || undefined,
-      flag_format: data.flag_format || undefined,
-      assigned_to: data.assigned_to || undefined,
+      type: data.type,
+      step: data.step || undefined,
+      subject: data.subject,
+      description: data.description,
+      more_info: data.more_info,
+      challenge_id: data.challenge_id,
     }
     mutation.mutate(questionData)
   }
@@ -137,73 +128,66 @@ function CreateQuestion() {
       </Flex>
 
       <Heading size="lg" textAlign="center" mb={8}>
-        Create New Question
+        Ask for Help
       </Heading>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <VStack spacing={6} bg={bgColor} p={8} borderRadius="lg" boxShadow="md">
-          <FormControl isRequired isInvalid={!!errors.question_text}>
-            <FormLabel htmlFor="question_text">Question Text</FormLabel>
-            <Textarea
-              id="question_text"
-              {...register("question_text", {
-                required: "Question text is required.",
+          <FormControl isRequired isInvalid={!!errors.subject}>
+            <FormLabel htmlFor="subject">Subject</FormLabel>
+            <Input
+              id="subject"
+              {...register("subject", {
+                required: "Subject is required.",
                 minLength: {
-                  value: 10,
-                  message: "Question text must be at least 10 characters.",
+                  value: 3,
+                  message: "Subject must be at least 3 characters.",
                 },
               })}
-              placeholder="Enter the question text..."
-              rows={4}
+              placeholder="Brief summary of your issue..."
             />
-            {errors.question_text && (
-              <FormErrorMessage>{errors.question_text.message}</FormErrorMessage>
+            {errors.subject && (
+              <FormErrorMessage>{errors.subject.message}</FormErrorMessage>
             )}
           </FormControl>
 
-          <FormControl isRequired isInvalid={!!errors.question_type}>
-            <FormLabel htmlFor="question_type">Question Type</FormLabel>
+          <FormControl isRequired isInvalid={!!errors.type}>
+            <FormLabel htmlFor="type">Help Request Type</FormLabel>
             <Select
-              id="question_type"
-              {...register("question_type", {
-                required: "Question type is required.",
+              id="type"
+              {...register("type", {
+                required: "Help request type is required.",
               })}
             >
-              {QUESTION_TYPES.map((type) => (
+              {HELP_REQUEST_TYPES.map((type) => (
                 <option key={type} value={type}>
                   {type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
                 </option>
               ))}
             </Select>
-            {errors.question_type && (
-              <FormErrorMessage>{errors.question_type.message}</FormErrorMessage>
+            {errors.type && (
+              <FormErrorMessage>{errors.type.message}</FormErrorMessage>
             )}
           </FormControl>
 
-          <FormControl isRequired isInvalid={!!errors.points}>
-            <FormLabel htmlFor="points">Points</FormLabel>
+          <FormControl isInvalid={!!errors.step}>
+            <FormLabel htmlFor="step">Challenge Step (Optional)</FormLabel>
             <Controller
-              name="points"
+              name="step"
               control={control}
               rules={{
-                required: "Points are required.",
                 min: {
                   value: 1,
-                  message: "Points must be at least 1.",
-                },
-                max: {
-                  value: 1000,
-                  message: "Points cannot exceed 1000.",
+                  message: "Step must be at least 1.",
                 },
               }}
               render={({ field: { onChange, value } }) => (
                 <NumberInput
-                  value={value}
-                  onChange={(_, valueAsNumber) => onChange(valueAsNumber || 0)}
+                  value={value || ""}
+                  onChange={(_, valueAsNumber) => onChange(valueAsNumber)}
                   min={1}
-                  max={1000}
                 >
-                  <NumberInputField />
+                  <NumberInputField placeholder="Which step are you stuck on?" />
                   <NumberInputStepper>
                     <NumberIncrementStepper />
                     <NumberDecrementStepper />
@@ -211,16 +195,18 @@ function CreateQuestion() {
                 </NumberInput>
               )}
             />
-            {errors.points && (
-              <FormErrorMessage>{errors.points.message}</FormErrorMessage>
+            {errors.step && (
+              <FormErrorMessage>{errors.step.message}</FormErrorMessage>
             )}
           </FormControl>
 
-          <FormControl isInvalid={!!errors.challenge_id}>
-            <FormLabel htmlFor="challenge_id">Associated Challenge (Optional)</FormLabel>
+          <FormControl isRequired isInvalid={!!errors.challenge_id}>
+            <FormLabel htmlFor="challenge_id">Associated Challenge</FormLabel>
             <Select
               id="challenge_id"
-              {...register("challenge_id")}
+              {...register("challenge_id", {
+                required: "Please select a challenge.",
+              })}
               placeholder="Select a challenge"
             >
               {challenges?.data.map((challenge) => (
@@ -234,53 +220,41 @@ function CreateQuestion() {
             )}
           </FormControl>
 
-          <FormControl isInvalid={!!errors.answer_text}>
-            <FormLabel htmlFor="answer_text">Answer Text (Optional)</FormLabel>
+          <FormControl isRequired isInvalid={!!errors.description}>
+            <FormLabel htmlFor="description">Detailed Description</FormLabel>
             <Textarea
-              id="answer_text"
-              {...register("answer_text")}
-              placeholder="Enter the correct answer or solution..."
+              id="description"
+              {...register("description", {
+                required: "Description is required.",
+                minLength: {
+                  value: 10,
+                  message: "Description must be at least 10 characters.",
+                },
+              })}
+              placeholder="Describe your issue in detail..."
+              rows={4}
+            />
+            {errors.description && (
+              <FormErrorMessage>{errors.description.message}</FormErrorMessage>
+            )}
+          </FormControl>
+
+          <FormControl isRequired isInvalid={!!errors.more_info}>
+            <FormLabel htmlFor="more_info">Additional Information</FormLabel>
+            <Textarea
+              id="more_info"
+              {...register("more_info", {
+                required: "Additional information is required.",
+                minLength: {
+                  value: 5,
+                  message: "Additional information must be at least 5 characters.",
+                },
+              })}
+              placeholder="What have you tried so far? Error messages? Screenshots descriptions?"
               rows={3}
             />
-            {errors.answer_text && (
-              <FormErrorMessage>{errors.answer_text.message}</FormErrorMessage>
-            )}
-          </FormControl>
-
-          <FormControl isInvalid={!!errors.hint_text}>
-            <FormLabel htmlFor="hint_text">Hint Text (Optional)</FormLabel>
-            <Textarea
-              id="hint_text"
-              {...register("hint_text")}
-              placeholder="Enter a helpful hint for participants..."
-              rows={2}
-            />
-            {errors.hint_text && (
-              <FormErrorMessage>{errors.hint_text.message}</FormErrorMessage>
-            )}
-          </FormControl>
-
-          <FormControl isInvalid={!!errors.flag_format}>
-            <FormLabel htmlFor="flag_format">Flag Format (Optional)</FormLabel>
-            <Input
-              id="flag_format"
-              {...register("flag_format")}
-              placeholder="e.g., flag{...} or tanzanite{...}"
-            />
-            {errors.flag_format && (
-              <FormErrorMessage>{errors.flag_format.message}</FormErrorMessage>
-            )}
-          </FormControl>
-
-          <FormControl isInvalid={!!errors.assigned_to}>
-            <FormLabel htmlFor="assigned_to">Assigned To (Optional)</FormLabel>
-            <Input
-              id="assigned_to"
-              {...register("assigned_to")}
-              placeholder="Enter username or email"
-            />
-            {errors.assigned_to && (
-              <FormErrorMessage>{errors.assigned_to.message}</FormErrorMessage>
+            {errors.more_info && (
+              <FormErrorMessage>{errors.more_info.message}</FormErrorMessage>
             )}
           </FormControl>
 
@@ -292,7 +266,7 @@ function CreateQuestion() {
             loadingText="Creating..."
             w="full"
           >
-            Create Question
+            Submit Help Request
           </Button>
         </VStack>
       </form>

@@ -44,6 +44,11 @@ def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> Any:
     return db_user
 
 
+def get_user(*, session: Session, id: uuid.UUID) -> User | None:
+    statement = select(User).where(User.id == id)
+    return session.exec(statement).first()
+
+
 def get_user_by_email(*, session: Session, email: str) -> User | None:
     statement = select(User).where(User.email == email)
     session_user = session.exec(statement).first()

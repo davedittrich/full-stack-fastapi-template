@@ -66,7 +66,7 @@ function QuestionDetail() {
           mt={4}
           variant="ghost"
         >
-          Back to Questions
+          Back to Help Requests
         </Button>
       </Container>
     )
@@ -77,7 +77,7 @@ function QuestionDetail() {
       <Container maxW="full">
         <Alert status="warning" mt={4}>
           <AlertIcon />
-          <AlertTitle>Question not found!</AlertTitle>
+          <AlertTitle>Help request not found!</AlertTitle>
         </Alert>
         <Button
           as={Link}
@@ -86,7 +86,7 @@ function QuestionDetail() {
           mt={4}
           variant="ghost"
         >
-          Back to Questions
+          Back to Help Requests
         </Button>
       </Container>
     )
@@ -101,7 +101,7 @@ function QuestionDetail() {
           leftIcon={<FiArrowLeft />}
           variant="ghost"
         >
-          Back to Questions
+          Back to Help Requests
         </Button>
         <Button
           as={Link}
@@ -111,7 +111,7 @@ function QuestionDetail() {
           colorScheme="ui.main"
           variant="outline"
         >
-          Edit Question
+          Edit Help Request
         </Button>
       </Flex>
 

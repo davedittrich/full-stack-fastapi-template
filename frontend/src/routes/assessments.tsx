@@ -25,38 +25,39 @@ import {
   InputRightElement,
   HStack,
   Select,
+  Tooltip,
 } from "@chakra-ui/react"
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useRef, useState } from "react"
-import { FiEdit, FiEye, FiTrash2, FiPlus, FiSearch, FiFilter } from "react-icons/fi"
+import { FiEdit, FiEye, FiTrash2, FiPlus, FiSearch, FiHelpCircle } from "react-icons/fi"
 
-import { type ApiError, type QuestionPublic } from "../client"
-import { QuestionsService } from "../client/questions"
-import { ChallengesService } from "../client/challenges"
+import { type ApiError, type AssessmentPublic } from "../client"
+import { AssessmentsService, ChallengesService } from "../client"
 import useCustomToast from "../hooks/useCustomToast"
+import { handleError } from "../utils"
 
-export const Route = createFileRoute("/questions")({
-  component: Questions,
+export const Route = createFileRoute("/assessments")({
+  component: Assessments,
 })
 
-function Questions() {
-  const showToast = useCustomToast()
+function Assessments() {
+  const { showSuccessToast } = useCustomToast()
   const queryClient = useQueryClient()
-  const { isOpen, onOpen, onClose } = useDisclosure()
-  const [questionToDelete, setQuestionToDelete] = useState<QuestionPublic | null>(null)
+  const { open, onOpen, onClose } = useDisclosure()
+  const [assessmentToDelete, setAssessmentToDelete] = useState<AssessmentPublic | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [challengeFilter, setChallengeFilter] = useState("")
   const cancelRef = useRef<HTMLButtonElement | null>(null)
 
   const {
-    data: questions,
-    isPending: questionsLoading,
-    isError: questionsError,
-    error: questionsErrorDetails,
+    data: assessments,
+    isPending: assessmentsLoading,
+    isError: assessmentsError,
+    error: assessmentsErrorDetails,
   } = useQuery({
-    queryKey: ["questions", { challengeId: challengeFilter }],
-    queryFn: () => QuestionsService.readQuestions({
+    queryKey: ["assessments", { challengeId: challengeFilter }],
+    queryFn: () => AssessmentsService.readAssessments({
       challengeId: challengeFilter || undefined
     }),
   })
@@ -69,12 +70,12 @@ function Questions() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => QuestionsService.deleteQuestion({ id }),
+    mutationFn: (id: string) => AssessmentsService.deleteAssessment({ id }),
     onSuccess: () => {
-      showToast("Success!", "Question deleted successfully.", "success")
+      showToast("Success!", "Assessment deleted successfully.", "success")
       onClose()
       queryClient.invalidateQueries({
-        queryKey: ["questions"],
+        queryKey: ["assessments"],
       })
     },
     onError: (err: ApiError) => {
@@ -83,22 +84,37 @@ function Questions() {
     },
   })
 
-  const handleDeleteQuestion = async () => {
-    if (!questionToDelete) return
-    deleteMutation.mutate(questionToDelete.id)
+  const getHintMutation = useMutation({
+    mutationFn: (id: string) => AssessmentsService.getAssessmentHint({ id }),
+    onSuccess: (data) => {
+      showToast("Hint", data.hint || "No hint available", "info")
+    },
+    onError: (err: ApiError) => {
+      const errDetail = (err.body as any)?.detail
+      showToast("Something went wrong.", `${errDetail}`, "error")
+    },
+  })
+
+  const handleDeleteAssessment = async () => {
+    if (!assessmentToDelete) return
+    deleteMutation.mutate(assessmentToDelete.id)
   }
 
-  const confirmDelete = (question: QuestionPublic) => {
-    setQuestionToDelete(question)
+  const confirmDelete = (assessment: AssessmentPublic) => {
+    setAssessmentToDelete(assessment)
     onOpen()
   }
 
-  const filteredQuestions = questions?.data.filter(question =>
-    question.question_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    question.question_type.toLowerCase().includes(searchTerm.toLowerCase())
+  const handleGetHint = (assessmentId: string) => {
+    getHintMutation.mutate(assessmentId)
+  }
+
+  const filteredAssessments = assessments?.data.filter(assessment =>
+    assessment.question_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    assessment.question_type.toLowerCase().includes(searchTerm.toLowerCase())
   ) || []
 
-  if (questionsLoading) {
+  if (assessmentsLoading) {
     return (
       <Flex justify="center" align="center" height="100vh" width="full">
         <Spinner size="xl" color="ui.main" />
@@ -106,8 +122,8 @@ function Questions() {
     )
   }
 
-  if (questionsError) {
-    const errDetail = (questionsErrorDetails?.body as any)?.detail
+  if (assessmentsError) {
+    const errDetail = (assessmentsErrorDetails?.body as any)?.detail
     showToast("Something went wrong.", `${errDetail}`, "error")
   }
 
@@ -115,24 +131,24 @@ function Questions() {
     <>
       <Container maxW="full">
         <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>
-          Question Management
+          Assessment Management
         </Heading>
 
         <Flex py={8} gap={4} direction={{ base: "column", md: "row" }} align={{ base: "stretch", md: "center" }}>
           <Button
             as={Link}
-            to="/questions/create"
+            to="/assessments/create"
             leftIcon={<FiPlus />}
             colorScheme="ui.main"
             variant="solid"
           >
-            Create Question
+            Create Assessment
           </Button>
 
           <HStack spacing={4} flex={1}>
             <InputGroup maxW="300px">
               <Input
-                placeholder="Search questions..."
+                placeholder="Search assessments..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -159,43 +175,46 @@ function Questions() {
         <Table variant="simple">
           <Thead>
             <Tr>
-              <Th>Question Text</Th>
+              <Th>Question</Th>
               <Th>Type</Th>
               <Th>Points</Th>
+              <Th>Difficulty</Th>
               <Th>Challenge</Th>
-              <Th>Assigned To</Th>
+              <Th>Status</Th>
               <Th>Actions</Th>
             </Tr>
           </Thead>
           <Tbody>
-            {filteredQuestions.map((question) => {
-              const challenge = challenges?.data.find(c => c.id === question.challenge_id)
-              const isAnswered = question.answered_time
-              const isAssigned = question.assigned_to
+            {filteredAssessments.map((assessment) => {
+              const challenge = challenges?.data.find(c => c.id === assessment.challenge_id)
 
               return (
-              <Tr key={question.id}>
+              <Tr key={assessment.id}>
                 <Td maxW="300px">
                   <Text isTruncated fontWeight="medium">
-                    {question.subject}
-                  </Text>
-                  <Text fontSize="sm" color="gray.500" isTruncated>
-                    {question.description}
+                    {assessment.question_text}
                   </Text>
                 </Td>
                 <Td>
                   <Badge colorScheme="blue" variant="subtle">
-                    {question.type || 'general'}
+                    {assessment.question_type || 'short_answer'}
                   </Badge>
                 </Td>
                 <Td>
-                  {question.step ? (
-                    <Badge colorScheme="orange" variant="outline">
-                      Step {question.step}
-                    </Badge>
-                  ) : (
-                    <Text color="ui.dim" fontSize="sm">-</Text>
-                  )}
+                  <Badge colorScheme="green" variant="subtle">
+                    {assessment.points || 10} pts
+                  </Badge>
+                </Td>
+                <Td>
+                  <Badge
+                    colorScheme={
+                      assessment.difficulty === 'easy' ? 'green' :
+                      assessment.difficulty === 'hard' ? 'red' : 'yellow'
+                    }
+                    variant="outline"
+                  >
+                    {assessment.difficulty || 'medium'}
+                  </Badge>
                 </Td>
                 <Td maxW="200px">
                   {challenge ? (
@@ -211,51 +230,47 @@ function Questions() {
                   )}
                 </Td>
                 <Td>
-                  {isAnswered ? (
-                    <Badge colorScheme="green" variant="solid">
-                      Answered
-                    </Badge>
-                  ) : isAssigned ? (
-                    <Badge colorScheme="yellow" variant="solid">
-                      In Progress
-                    </Badge>
-                  ) : (
-                    <Badge colorScheme="red" variant="outline">
-                      Open
-                    </Badge>
-                  )}
-                </Td>
-                <Td>
-                  <Text fontSize="sm" color="gray.500">
-                    {new Date(question.asked_time).toLocaleDateString()}
-                  </Text>
-                  <Text fontSize="xs" color="gray.400">
-                    {new Date(question.asked_time).toLocaleTimeString()}
-                  </Text>
+                  <Badge
+                    colorScheme={assessment.is_active ? "green" : "gray"}
+                    variant={assessment.is_active ? "solid" : "outline"}
+                  >
+                    {assessment.is_active ? "Active" : "Inactive"}
+                  </Badge>
                 </Td>
                 <Td>
                   <Flex gap={2}>
                     <IconButton
                       as={Link}
-                      to="/questions/$questionId"
-                      params={{ questionId: question.id }}
-                      aria-label="View question"
+                      to="/assessments/$assessmentId"
+                      params={{ assessmentId: assessment.id }}
+                      aria-label="View assessment"
                       icon={<FiEye />}
                       size="sm"
                       variant="ghost"
                     />
+                    <Tooltip label="Get hint (students only)">
+                      <IconButton
+                        onClick={() => handleGetHint(assessment.id)}
+                        aria-label="Get hint"
+                        icon={<FiHelpCircle />}
+                        size="sm"
+                        variant="ghost"
+                        colorScheme="blue"
+                        isLoading={getHintMutation.isPending}
+                      />
+                    </Tooltip>
                     <IconButton
                       as={Link}
-                      to="/questions/$questionId/edit"
-                      params={{ questionId: question.id }}
-                      aria-label="Edit question"
+                      to="/assessments/$assessmentId/edit"
+                      params={{ assessmentId: assessment.id }}
+                      aria-label="Edit assessment"
                       icon={<FiEdit />}
                       size="sm"
                       variant="ghost"
                     />
                     <IconButton
-                      onClick={() => confirmDelete(question)}
-                      aria-label="Delete question"
+                      onClick={() => confirmDelete(assessment)}
+                      aria-label="Delete assessment"
                       icon={<FiTrash2 />}
                       size="sm"
                       variant="ghost"
@@ -269,12 +284,12 @@ function Questions() {
           </Tbody>
         </Table>
 
-        {filteredQuestions.length === 0 && (
+        {filteredAssessments.length === 0 && (
           <Flex justify="center" align="center" height="200px">
             <Heading size="md" color="ui.dim">
               {searchTerm || challengeFilter
-                ? "No questions match your filters"
-                : "No questions found. Create your first question!"
+                ? "No assessments match your filters"
+                : "No assessments found. Create your first assessment!"
               }
             </Heading>
           </Flex>
@@ -290,10 +305,10 @@ function Questions() {
         <AlertDialogOverlay>
           <AlertDialogContent>
             <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Delete Question
+              Delete Assessment
             </AlertDialogHeader>
             <AlertDialogBody>
-              Are you sure you want to delete this question? This action cannot be undone.
+              Are you sure you want to delete this assessment? This action cannot be undone.
             </AlertDialogBody>
             <AlertDialogFooter>
               <Button ref={cancelRef} onClick={onClose}>
@@ -301,7 +316,7 @@ function Questions() {
               </Button>
               <Button
                 colorScheme="red"
-                onClick={handleDeleteQuestion}
+                onClick={handleDeleteAssessment}
                 ml={3}
                 isLoading={deleteMutation.isPending}
               >

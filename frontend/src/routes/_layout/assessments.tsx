@@ -1,24 +1,24 @@
 import { Box, Heading, Text } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
 
-export const Route = createFileRoute("/_layout/questions")({
-  component: Questions,
+export const Route = createFileRoute("/_layout/assessments")({
+  component: Assessments,
 })
 
-function Questions() {
+function Assessments() {
   return (
     <Box>
       <Heading size="lg" textAlign="center" py={12}>
-        Help Requests
+        Assessments
       </Heading>
       <Text textAlign="center" color="gray.500">
-        Student help request management for lab-style exercises.
+        Assessment management interface for quiz-style questions with scoring.
       </Text>
       <Text textAlign="center" mt={4} fontSize="sm" color="gray.400">
-        Students can ask for help on challenges, and proctors can provide assistance and answers.
+        This page will allow lecturers and admins to create and manage assessments, and students to take quizzes.
       </Text>
     </Box>
   )
 }
 
-export default Questions
+export default Assessments

@@ -16,62 +16,83 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-  Spinner,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
+  Switch,
+  FormHelperText,
 } from "@chakra-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useRouter } from "@tanstack/react-router"
+import { createFileRoute, useRouter, useSearch } from "@tanstack/react-router"
 import { type SubmitHandler, useForm, Controller } from "react-hook-form"
-import { useEffect } from "react"
 import { FiArrowLeft } from "react-icons/fi"
 
-import { type ApiError, type QuestionUpdate } from "../../../client"
-import { QuestionsService, ChallengesService } from "../../../client"
-import useCustomToast from "../../../hooks/useCustomToast"
+import { type ApiError, type AssessmentCreate } from "../../client"
+import { AssessmentsService, ChallengesService } from "../../client"
+import useCustomToast from "../../hooks/useCustomToast"
 
-export const Route = createFileRoute("/questions/$questionId/edit")({
-  component: EditQuestion,
+export const Route = createFileRoute("/assessments/create")({
+  component: CreateAssessment,
+  validateSearch: (search: Record<string, unknown>) => ({
+    challengeId: (search.challengeId as string) || undefined,
+  }),
 })
 
-interface QuestionFormData {
-  type: string
-  step?: number
-  subject: string
-  description: string
-  more_info: string
+interface AssessmentFormData {
+  question_text: string
+  question_type: string
+  points: number
   challenge_id: string
+  answer_text?: string
+  hint_text?: string
+  flag_format?: string
+  difficulty: string
+  is_active: boolean
 }
 
-const HELP_REQUEST_TYPES = [
-  "general",
-  "technical",
-  "installation",
-  "configuration",
-  "troubleshooting",
-  "concept_clarification",
-  "tool_usage",
-  "environment_setup",
+const ASSESSMENT_TYPES = [
+  "short_answer",
+  "multiple_choice",
+  "essay",
+  "coding",
+  "flag_capture",
+  "forensics",
+  "reverse_engineering",
+  "web_security",
+  "cryptography",
+  "network_security",
   "other"
 ]
 
-function EditQuestion() {
-  const { questionId } = Route.useParams()
+const DIFFICULTY_LEVELS = [
+  "easy",
+  "medium",
+  "hard"
+]
+
+function CreateAssessment() {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const router = useRouter()
+  const search = useSearch({ from: "/assessments/create" })
   const bgColor = useColorModeValue("ui.white", "ui.dark")
 
   const {
-    data: question,
-    isPending: questionLoading,
-    isError: questionError,
-    error: questionErrorDetails,
-  } = useQuery({
-    queryKey: ["questions", questionId],
-    queryFn: () => QuestionsService.readQuestion({ id: questionId }),
+    register,
+    handleSubmit,
+    control,
+    formState: { errors, isSubmitting },
+  } = useForm<AssessmentFormData>({
+    mode: "onBlur",
+    criteriaMode: "all",
+    defaultValues: {
+      question_text: "",
+      question_type: "short_answer",
+      points: 10,
+      challenge_id: search.challengeId || "",
+      answer_text: "",
+      hint_text: "",
+      flag_format: "",
+      difficulty: "medium",
+      is_active: true,
+    },
   })
 
   const {
@@ -81,43 +102,15 @@ function EditQuestion() {
     queryFn: () => ChallengesService.readChallenges({}),
   })
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<QuestionFormData>({
-    mode: "onBlur",
-    criteriaMode: "all",
-  })
-
-  useEffect(() => {
-    if (question) {
-      reset({
-        type: question.type || "general",
-        step: question.step || undefined,
-        subject: question.subject,
-        description: question.description,
-        more_info: question.more_info,
-        challenge_id: question.challenge_id,
-      })
-    }
-  }, [question, reset])
-
   const mutation = useMutation({
-    mutationFn: (data: QuestionUpdate) =>
-      QuestionsService.updateQuestion({ 
-        id: questionId, 
-        requestBody: data 
-      }),
+    mutationFn: (data: AssessmentCreate) =>
+      AssessmentsService.createAssessment({ requestBody: data }),
     onSuccess: (data) => {
-      showToast("Success!", "Help request updated successfully.", "success")
-      queryClient.invalidateQueries({ queryKey: ["questions"] })
-      queryClient.invalidateQueries({ queryKey: ["questions", questionId] })
-      router.navigate({ 
-        to: "/questions/$questionId", 
-        params: { questionId: data.id } 
+      showToast("Success!", "Assessment created successfully.", "success")
+      queryClient.invalidateQueries({ queryKey: ["assessments"] })
+      router.navigate({
+        to: "/assessments/$assessmentId",
+        params: { assessmentId: data.id }
       })
     },
     onError: (err: ApiError) => {
@@ -126,64 +119,19 @@ function EditQuestion() {
     },
   })
 
-  const onSubmit: SubmitHandler<QuestionFormData> = async (data) => {
-    const questionData: QuestionUpdate = {
-      type: data.type,
-      step: data.step || undefined,
-      subject: data.subject,
-      description: data.description,
-      more_info: data.more_info,
+  const onSubmit: SubmitHandler<AssessmentFormData> = async (data) => {
+    const assessmentData: AssessmentCreate = {
+      question_text: data.question_text,
+      question_type: data.question_type,
+      points: data.points,
       challenge_id: data.challenge_id,
+      answer_text: data.answer_text || undefined,
+      hint_text: data.hint_text || undefined,
+      flag_format: data.flag_format || undefined,
+      difficulty: data.difficulty,
+      is_active: data.is_active,
     }
-    mutation.mutate(questionData)
-  }
-
-  if (questionLoading) {
-    return (
-      <Flex justify="center" align="center" height="100vh" width="full">
-        <Spinner size="xl" color="ui.main" />
-      </Flex>
-    )
-  }
-
-  if (questionError) {
-    const errDetail = (questionErrorDetails?.body as any)?.detail || "Question not found"
-    return (
-      <Container maxW="full">
-        <Alert status="error" mt={4}>
-          <AlertIcon />
-          <AlertTitle>Error loading question!</AlertTitle>
-          <AlertDescription>{errDetail}</AlertDescription>
-        </Alert>
-        <Button
-          onClick={() => router.history.back()}
-          leftIcon={<FiArrowLeft />}
-          mt={4}
-          variant="ghost"
-        >
-          Back
-        </Button>
-      </Container>
-    )
-  }
-
-  if (!question) {
-    return (
-      <Container maxW="full">
-        <Alert status="warning" mt={4}>
-          <AlertIcon />
-          <AlertTitle>Question not found!</AlertTitle>
-        </Alert>
-        <Button
-          onClick={() => router.history.back()}
-          leftIcon={<FiArrowLeft />}
-          mt={4}
-          variant="ghost"
-        >
-          Back
-        </Button>
-      </Container>
-    )
+    mutation.mutate(assessmentData)
   }
 
   return (
@@ -199,7 +147,7 @@ function EditQuestion() {
       </Flex>
 
       <Heading size="lg" textAlign="center" mb={8}>
-        Edit Question
+        Create New Assessment
       </Heading>
 
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -215,7 +163,7 @@ function EditQuestion() {
                   message: "Question text must be at least 10 characters.",
                 },
               })}
-              placeholder="Enter the question text..."
+              placeholder="Enter the assessment question..."
               rows={4}
             />
             {errors.question_text && (
@@ -231,7 +179,7 @@ function EditQuestion() {
                 required: "Question type is required.",
               })}
             >
-              {QUESTION_TYPES.map((type) => (
+              {ASSESSMENT_TYPES.map((type) => (
                 <option key={type} value={type}>
                   {type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
                 </option>
@@ -278,11 +226,32 @@ function EditQuestion() {
             )}
           </FormControl>
 
-          <FormControl isInvalid={!!errors.challenge_id}>
-            <FormLabel htmlFor="challenge_id">Associated Challenge (Optional)</FormLabel>
+          <FormControl isRequired isInvalid={!!errors.difficulty}>
+            <FormLabel htmlFor="difficulty">Difficulty Level</FormLabel>
+            <Select
+              id="difficulty"
+              {...register("difficulty", {
+                required: "Difficulty level is required.",
+              })}
+            >
+              {DIFFICULTY_LEVELS.map((level) => (
+                <option key={level} value={level}>
+                  {level.charAt(0).toUpperCase() + level.slice(1)}
+                </option>
+              ))}
+            </Select>
+            {errors.difficulty && (
+              <FormErrorMessage>{errors.difficulty.message}</FormErrorMessage>
+            )}
+          </FormControl>
+
+          <FormControl isRequired isInvalid={!!errors.challenge_id}>
+            <FormLabel htmlFor="challenge_id">Associated Challenge</FormLabel>
             <Select
               id="challenge_id"
-              {...register("challenge_id")}
+              {...register("challenge_id", {
+                required: "Please select a challenge.",
+              })}
               placeholder="Select a challenge"
             >
               {challenges?.data.map((challenge) => (
@@ -304,6 +273,9 @@ function EditQuestion() {
               placeholder="Enter the correct answer or solution..."
               rows={3}
             />
+            <FormHelperText>
+              Students will not see this answer. Only visible to lecturers and admins.
+            </FormHelperText>
             {errors.answer_text && (
               <FormErrorMessage>{errors.answer_text.message}</FormErrorMessage>
             )}
@@ -314,9 +286,12 @@ function EditQuestion() {
             <Textarea
               id="hint_text"
               {...register("hint_text")}
-              placeholder="Enter a helpful hint for participants..."
+              placeholder="Enter a helpful hint for students..."
               rows={2}
             />
+            <FormHelperText>
+              Students can request hints during assessments.
+            </FormHelperText>
             {errors.hint_text && (
               <FormErrorMessage>{errors.hint_text.message}</FormErrorMessage>
             )}
@@ -329,21 +304,35 @@ function EditQuestion() {
               {...register("flag_format")}
               placeholder="e.g., flag{...} or tanzanite{...}"
             />
+            <FormHelperText>
+              For CTF-style questions, specify the expected flag format.
+            </FormHelperText>
             {errors.flag_format && (
               <FormErrorMessage>{errors.flag_format.message}</FormErrorMessage>
             )}
           </FormControl>
 
-          <FormControl isInvalid={!!errors.assigned_to}>
-            <FormLabel htmlFor="assigned_to">Assigned To (Optional)</FormLabel>
-            <Input
-              id="assigned_to"
-              {...register("assigned_to")}
-              placeholder="Enter username or email"
-            />
-            {errors.assigned_to && (
-              <FormErrorMessage>{errors.assigned_to.message}</FormErrorMessage>
-            )}
+          <FormControl>
+            <Flex align="center">
+              <FormLabel htmlFor="is_active" mb="0">
+                Active Assessment
+              </FormLabel>
+              <Controller
+                name="is_active"
+                control={control}
+                render={({ field: { onChange, value } }) => (
+                  <Switch
+                    id="is_active"
+                    isChecked={value}
+                    onChange={onChange}
+                    colorScheme="ui.main"
+                  />
+                )}
+              />
+            </Flex>
+            <FormHelperText>
+              Only active assessments are visible to students.
+            </FormHelperText>
           </FormControl>
 
           <Button
@@ -351,10 +340,10 @@ function EditQuestion() {
             colorScheme="ui.main"
             type="submit"
             isLoading={isSubmitting || mutation.isPending}
-            loadingText="Updating..."
+            loadingText="Creating..."
             w="full"
           >
-            Update Question
+            Create Assessment
           </Button>
         </VStack>
       </form>

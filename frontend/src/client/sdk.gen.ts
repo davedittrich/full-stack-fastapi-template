@@ -3,7 +3,149 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ChallengesReadChallengesData, ChallengesReadChallengesResponse, ChallengesCreateChallengeData, ChallengesCreateChallengeResponse, ChallengesUpdateChallengeData, ChallengesUpdateChallengeResponse, ChallengesReadChallengeData, ChallengesReadChallengeResponse, ChallengesDeleteChallengeData, ChallengesDeleteChallengeResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, QuestionsReadQuestionsData, QuestionsReadQuestionsResponse, QuestionsCreateQuestionData, QuestionsCreateQuestionResponse, QuestionsUpdateQuestionData, QuestionsUpdateQuestionResponse, QuestionsReadQuestionData, QuestionsReadQuestionResponse, QuestionsDeleteQuestionData, QuestionsDeleteQuestionResponse, QuestionsAssignQuestionData, QuestionsAssignQuestionResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { AssessmentsReadAssessmentsData, AssessmentsReadAssessmentsResponse, AssessmentsCreateAssessmentData, AssessmentsCreateAssessmentResponse, AssessmentsReadAssessmentData, AssessmentsReadAssessmentResponse, AssessmentsUpdateAssessmentData, AssessmentsUpdateAssessmentResponse, AssessmentsDeleteAssessmentData, AssessmentsDeleteAssessmentResponse, AssessmentsGetAssessmentHintData, AssessmentsGetAssessmentHintResponse, ChallengesReadChallengesData, ChallengesReadChallengesResponse, ChallengesCreateChallengeData, ChallengesCreateChallengeResponse, ChallengesUpdateChallengeData, ChallengesUpdateChallengeResponse, ChallengesReadChallengeData, ChallengesReadChallengeResponse, ChallengesDeleteChallengeData, ChallengesDeleteChallengeResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, QuestionsReadQuestionsData, QuestionsReadQuestionsResponse, QuestionsCreateQuestionData, QuestionsCreateQuestionResponse, QuestionsUpdateQuestionData, QuestionsUpdateQuestionResponse, QuestionsReadQuestionData, QuestionsReadQuestionResponse, QuestionsDeleteQuestionData, QuestionsDeleteQuestionResponse, QuestionsAssignQuestionData, QuestionsAssignQuestionResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class AssessmentsService {
+    /**
+     * Read Assessments
+     * Retrieve assessments.
+     * Students see only active assessments without answers.
+     * Lecturers and admins see all assessments with full details.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @param data.challengeId
+     * @returns AssessmentsPublic Successful Response
+     * @throws ApiError
+     */
+    public static readAssessments(data: AssessmentsReadAssessmentsData = {}): CancelablePromise<AssessmentsReadAssessmentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assessments/',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                challenge_id: data.challengeId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
+    /**
+     * Create Assessment
+     * Create new assessment.
+     * Only lecturers and admins can create assessments.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns AssessmentPublic Successful Response
+     * @throws ApiError
+     */
+    public static createAssessment(data: AssessmentsCreateAssessmentData): CancelablePromise<AssessmentsCreateAssessmentResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/assessments/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
+    /**
+     * Read Assessment
+     * Get assessment by ID.
+     * Students see only active assessments without answers.
+     * @param data The data for the request.
+     * @param data.id
+     * @returns AssessmentPublic Successful Response
+     * @throws ApiError
+     */
+    public static readAssessment(data: AssessmentsReadAssessmentData): CancelablePromise<AssessmentsReadAssessmentResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assessments/{id}',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
+    /**
+     * Update Assessment
+     * Update an assessment.
+     * Only lecturers and admins can update assessments.
+     * @param data The data for the request.
+     * @param data.id
+     * @param data.requestBody
+     * @returns AssessmentPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateAssessment(data: AssessmentsUpdateAssessmentData): CancelablePromise<AssessmentsUpdateAssessmentResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/assessments/{id}',
+            path: {
+                id: data.id
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
+    /**
+     * Delete Assessment
+     * Delete an assessment.
+     * Only lecturers and admins can delete assessments.
+     * @param data The data for the request.
+     * @param data.id
+     * @returns Message Successful Response
+     * @throws ApiError
+     */
+    public static deleteAssessment(data: AssessmentsDeleteAssessmentData): CancelablePromise<AssessmentsDeleteAssessmentResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/assessments/{id}',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
+    /**
+     * Get Assessment Hint
+     * Get hint for an assessment.
+     * Only students can request hints for active assessments.
+     * @param data The data for the request.
+     * @param data.id
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getAssessmentHint(data: AssessmentsGetAssessmentHintData): CancelablePromise<AssessmentsGetAssessmentHintResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/assessments/{id}/hint',
+            path: {
+                id: data.id
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+
+}
 
 export class ChallengesService {
     /**

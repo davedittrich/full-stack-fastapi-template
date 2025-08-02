@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import challenges, items, login, private, questions, users, utils
+from app.api.routes import assessments, challenges, items, login, private, questions, users, utils
 from app.core.config import settings
 
 api_router = APIRouter()
@@ -10,6 +10,7 @@ api_router.include_router(utils.router, prefix="/utils", tags=["utils"])
 api_router.include_router(items.router, prefix="/items", tags=["items"])
 api_router.include_router(challenges.router, prefix="/challenges", tags=["challenges"])
 api_router.include_router(questions.router, prefix="/questions", tags=["questions"])
+api_router.include_router(assessments.router, prefix="/assessments", tags=["assessments"])
 
 
 if settings.ENVIRONMENT == "local":
